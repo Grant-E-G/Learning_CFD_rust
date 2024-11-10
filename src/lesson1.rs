@@ -22,6 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
     let u_lenght = opts.grid_point_number_x as usize; 
     let x_delta = opts.total_x_delta / opts.grid_point_number_x as f32;
+    let t_delta = opts.total_t_delta / opts.grid_point_number_t as f32;
     let mut u_wave_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
     let lower_bound = (0.5 / x_delta) as usize;
@@ -49,6 +50,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     chart.configure_series_labels().background_style(&WHITE.mix(0.8)).border_style(&BLACK).draw().unwrap();
 
     root.present().unwrap();
+
+
+    // update the wave state
+    let mut u_wave_state_new = vec![0.0; u_lenght];
+    for t in 0..opts.grid_point_number_t {}
 
     Ok(())
 
