@@ -30,7 +30,7 @@ fn plot_wave_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn s
         .margin(10)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d(0..data.len(), -1.0..1.0)?;
+        .build_cartesian_2d(0..data.len(), -3.0..3.0)?;
 
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(
@@ -79,11 +79,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut wave_state_total_2d = vec![vec![0.0; u_lenght]; opts.grid_point_number_t as usize];
     // set the initial state
     wave_state_total_2d[0] = u_wave_state.clone();
-    for t in 0..opts.grid_point_number_t {
+    for t in 0..opts.grid_point_number_t -1{
+        // out of bounds error
         for x in 1..u_lenght - 1 {
             wave_state_total_2d[t as usize + 1][x] = wave_state_total_2d[t as usize][x] 
             - opts.wave_speed * t_delta/x_delta * (wave_state_total_2d[t as usize][x] 
-            + wave_state_total_2d[t as usize][x - 1]);
+            - wave_state_total_2d[t as usize][x - 1]);
         }
 
     }
