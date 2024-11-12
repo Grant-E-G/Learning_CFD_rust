@@ -1,28 +1,51 @@
 use plotters::prelude::*;
 use clap::Parser;
 
+use std::process::{Command, Stdio};
+use std::io::{self, BufRead, BufReader};
+
 #[derive(Parser)]
 struct Opts {
     #[clap(long, default_value_t = 100)]
-    grid_point_number_x: u32,
+    grid_point_number_x: u64,
     #[clap(long, default_value_t = 2.0)]
-    total_x_delta: f32,
+    total_x_delta: f64,
     #[clap(long, default_value_t = 100)]
-    grid_point_number_t: u32,
+    grid_point_number_t: u64,
     #[clap(long, default_value_t = 1.0)]
-    total_t_delta: f32,
+    total_t_delta: f64,
     #[clap(long, default_value_t = 1.0)]
-    wave_speed: f32,
+    wave_speed: f64,
 
 
+}
+
+fn plot_wave_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn std::error::Error>> {
+    let file_name = format!("frame_{:04}.png", frame_number);
+    let root = BitMapBackend::new(&file_name, (800, 600)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption("Wave Equation Dynamics", ("sans-serif", 50))
+        .margin(10)
+        .x_label_area_size(30)
+        .y_label_area_size(30)
+        .build_cartesian_2d(0..data.len(), -1.0..1.0)?;
+
+    chart.configure_mesh().draw()?;
+    chart.draw_series(LineSeries::new(
+        data.iter().enumerate().map(|(x, &y)| (x, y)),
+        &RED,
+    ))?;
+    Ok(())
 }
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
     let u_lenght = opts.grid_point_number_x as usize; 
-    let x_delta = opts.total_x_delta / opts.grid_point_number_x as f32;
-    let t_delta = opts.total_t_delta / opts.grid_point_number_t as f32;
+    let x_delta = opts.total_x_delta / opts.grid_point_number_x as f64;
+    let t_delta = opts.total_t_delta / opts.grid_point_number_t as f64;
     let mut u_wave_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
     let lower_bound = (0.5 / x_delta) as usize;
@@ -39,10 +62,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .margin(5)
         .x_label_area_size(40)
         .y_label_area_size(40)
-        .build_cartesian_2d(0f32..opts.total_x_delta, 0f32..2.0).unwrap();
+        .build_cartesian_2d(0f64..opts.total_x_delta, 0f64..2.0).unwrap();
     chart.configure_mesh().draw().unwrap();
     chart.draw_series(LineSeries::new(
-        (0..u_lenght).map(|i| (i as f32 * x_delta, u_wave_state[i])),
+        (0..u_lenght).map(|i| (i as f64 * x_delta, u_wave_state[i])),
         &RED,
     ))?
     .label("Initial State")
@@ -53,8 +76,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // update the wave state
-    let mut u_wave_state_new = vec![0.0; u_lenght];
-    for t in 0..opts.grid_point_number_t {}
+    let mut wave_state_total_2d = vec![vec![0.0; u_lenght]; opts.grid_point_number_t as usize];
+    // set the initial state
+    wave_state_total_2d[0] = u_wave_state.clone();
+    for t in 0..opts.grid_point_number_t {
+        for x in 1..u_lenght - 1 {
+            wave_state_total_2d[t as usize + 1][x] = wave_state_total_2d[t as usize][x] 
+            - opts.wave_speed * t_delta/x_delta * (wave_state_total_2d[t as usize][x] 
+            + wave_state_total_2d[t as usize][x - 1]);
+        }
+
+    }
+    for (i, data) in wave_state_total_2d.iter().enumerate() {
+        plot_wave_frame(data, i)?;
+    }
+    // bash command: ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video.mp4
+    let mut child = Command::new("bash")
+    .arg("-c")
+    .arg("ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video.mp4") // Example of a long-running command
+    .stdout(Stdio::piped())
+    .spawn()
+    .expect("Failed to spawn command");
+
+    if let Some(stdout) = child.stdout.take() {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines() {
+            println!("{}", line?);
+        }
+    }
+
+    let status = child.wait()?;
+    println!("Command exited with status: {}", status);
 
     Ok(())
 
