@@ -74,13 +74,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     root.present().unwrap();
 
-
+    assert!(opts.wave_speed * t_delta / x_delta <= 1.0, "CFL condition violated!");
     // update the wave state
     let mut wave_state_total_2d = vec![vec![0.0; u_lenght]; opts.grid_point_number_t as usize];
     // set the initial state
     wave_state_total_2d[0] = u_wave_state.clone();
     for t in 0..opts.grid_point_number_t -1{
-        // out of bounds error
+        // Reflective boundary conditions
+        wave_state_total_2d[t as usize + 1][0] = wave_state_total_2d[t as usize][u_lenght - 1];
+        wave_state_total_2d[t as usize + 1][u_lenght - 1] = wave_state_total_2d[t as usize][u_lenght - 2];
         for x in 1..u_lenght - 1 {
             wave_state_total_2d[t as usize + 1][x] = wave_state_total_2d[t as usize][x] 
             - opts.wave_speed * t_delta/x_delta * (wave_state_total_2d[t as usize][x] 
@@ -108,6 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let status = child.wait()?;
     println!("Command exited with status: {}", status);
+    println!("total wave state {:?}", wave_state_total_2d);
 
     Ok(())
 
