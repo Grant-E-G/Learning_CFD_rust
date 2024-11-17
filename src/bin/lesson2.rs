@@ -60,18 +60,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         wave_state_total_2d[t as usize + 1][u_lenght - 1] = wave_state_total_2d[t as usize][u_lenght - 2];
         for x in 1..u_lenght - 1 {
             wave_state_total_2d[t as usize + 1][x] = wave_state_total_2d[t as usize][x] 
-            *(1 - t_delta/x_delta * (wave_state_total_2d[t as usize][x] 
+            *(1.0 - t_delta/x_delta * (wave_state_total_2d[t as usize][x] 
             - wave_state_total_2d[t as usize][x - 1]));
         }
 
     }
     for (i, data) in wave_state_total_2d.iter().enumerate() {
-        plot_wave_frame(data, i)?;
+        plot_frame(data, i)?;
     }
     // bash command: ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video.mp4
     let mut child = Command::new("bash")
     .arg("-c")
-    .arg("ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video.mp4") // Example of a long-running command
+    .arg("ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video_lesson2.mp4") // Example of a long-running command
     .stdout(Stdio::piped())
     .spawn()
     .expect("Failed to spawn command");
