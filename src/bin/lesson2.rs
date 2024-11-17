@@ -2,7 +2,7 @@ use plotters::prelude::*;
 use clap::Parser;
 
 use std::process::{Command, Stdio};
-use std::io::{self, BufRead, BufReader};
+use std::io::{ BufRead, BufReader};
 
 #[derive(Parser)]
 struct Opts {
