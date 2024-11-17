@@ -6,13 +6,13 @@ use std::io::{ BufRead, BufReader};
 
 #[derive(Parser)]
 struct Opts {
-    #[clap(long, default_value_t = 100)]
+    #[clap(long, default_value_t = 200)]
     grid_point_number_x: u64,
     #[clap(long, default_value_t = 2.0)]
     total_x_delta: f64,
     #[clap(long, default_value_t = 100)]
     grid_point_number_t: u64,
-    #[clap(long, default_value_t = 1.0)]
+    #[clap(long, default_value_t = 3.0)]
     total_t_delta: f64,
     #[clap(long, default_value_t = 1.0)]
     wave_speed: f64,
