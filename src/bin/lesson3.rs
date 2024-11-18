@@ -6,11 +6,11 @@ use std::io::{ BufRead, BufReader};
 
 #[derive(Parser)]
 struct Opts {
-    #[clap(long, default_value_t = 200)]
+    #[clap(long, default_value_t = 100)]
     grid_point_number_x: u64,
     #[clap(long, default_value_t = 2.0)]
     total_x_delta: f64,
-    #[clap(long, default_value_t = 1.0)]
+    #[clap(long, default_value_t = 0.5)]
     total_t_delta: f64,
     #[clap(long, default_value_t = 0.3)]
     viscosity: f64,
@@ -45,6 +45,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let x_delta = opts.total_x_delta / opts.grid_point_number_x as f64;
     let t_delta = opts.sigma * (x_delta*x_delta)/opts.viscosity;
     let grid_point_number_t = (opts.total_t_delta / t_delta).floor() as u64;
+    print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
     let mut u_wave_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
     let lower_bound = (0.5 / x_delta) as usize;
