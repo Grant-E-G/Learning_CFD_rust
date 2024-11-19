@@ -29,7 +29,7 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn std::e
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption("Wave Equation Dynamics", ("sans-serif", 50))
+        .caption("one-dimensional diffusion", ("sans-serif", 50))
         .margin(10)
         .x_label_area_size(30)
         .y_label_area_size(30)
