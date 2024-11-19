@@ -3,6 +3,9 @@ use clap::Parser;
 
 use std::process::{Command, Stdio};
 use std::io::{ BufRead, BufReader};
+use indicatif::{ProgressBar, ProgressStyle};
+use std::thread;
+use std::time::Duration;
 
 #[derive(Parser)]
 struct Opts {
@@ -56,9 +59,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // update the wave state
     let mut wave_state_total_2d = vec![vec![0.0; u_lenght]; grid_point_number_t as usize];
+    //setup progress bar
+    let pb = ProgressBar::new(grid_point_number_t);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+            .unwrap()
+            .progress_chars("##-"),
+    );
+
+
     // set the initial state
+    print!("starting simulation \n");
     wave_state_total_2d[0] = u_wave_state.clone();
     for t in 0..grid_point_number_t -1{
+        pb.set_message(format!("Processing item {}", t + 1));
+        pb.inc(1); // Increment the progress bar
         // Reflective boundary conditions
         wave_state_total_2d[t as usize + 1][0] = wave_state_total_2d[t as usize][u_lenght - 1];
         wave_state_total_2d[t as usize + 1][u_lenght - 1] = wave_state_total_2d[t as usize][u_lenght - 2];
@@ -70,7 +86,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
     }
+    pb.finish_with_message("done");
+    // clean up any images in the directory
+    let _ = std::fs::remove_dir_all("frames");
+    print!("creating frames \n");
+    let pb = ProgressBar::new(grid_point_number_t);
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}")
+            .unwrap()
+            .progress_chars("##-"),
+    );
     for (i, data) in wave_state_total_2d.iter().enumerate() {
+        pb.set_message(format!("Processing item {}", i + 1));
+        pb.inc(1); // Increment the progress bar
         plot_frame(data, i)?;
     }
     // bash command: ffmpeg -framerate 24 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output_video.mp4
@@ -91,6 +120,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let status = child.wait()?;
     println!("Command exited with status: {}", status);
     println!("total wave state {:?}", wave_state_total_2d);
+    
+
 
     Ok(())
 
