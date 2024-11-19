@@ -3,7 +3,6 @@ use clap::Parser;
 
 use std::process::{Command, Stdio};
 use std::io::{ BufRead, BufReader};
-use std::str::pattern;
 use indicatif::{ProgressBar, ProgressStyle};
 
 
@@ -98,7 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
     }
-    
+
 
     print!("creating frames \n");
     let pb = ProgressBar::new(grid_point_number_t);
