@@ -7,3 +7,4 @@ edition = "2021"
 plotters = "0.3"  # Use the latest version available
 clap = { version = "4.0", features = ["derive"] }
 indicatif = "0.17"
+glob = "0.3"

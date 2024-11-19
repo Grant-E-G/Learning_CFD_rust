@@ -3,9 +3,9 @@ use clap::Parser;
 
 use std::process::{Command, Stdio};
 use std::io::{ BufRead, BufReader};
+use std::str::pattern;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::thread;
-use std::time::Duration;
+
 
 #[derive(Parser)]
 struct Opts {
@@ -19,6 +19,8 @@ struct Opts {
     viscosity: f64,
     #[clap(long, default_value_t = 0.2)]
     sigma: f64,
+    #[clap(long)]
+    verbose: bool,
 
 }
 
@@ -88,7 +90,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     pb.finish_with_message("done");
     // clean up any images in the directory
-    let _ = std::fs::remove_dir_all("frames");
+    let pattern = "frame*.png";
+    for entry in glob::glob(pattern)? {
+        if let Ok(path) = entry {
+            if path.is_file() {
+                std::fs::remove_file(path)?;
+            }
+        }
+    }
+    
+
     print!("creating frames \n");
     let pb = ProgressBar::new(grid_point_number_t);
     pb.set_style(
@@ -119,7 +130,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let status = child.wait()?;
     println!("Command exited with status: {}", status);
-    println!("total wave state {:?}", wave_state_total_2d);
+    if opts.verbose {
+        println!("total wave state {:?}", wave_state_total_2d);
+    }
+
     
 
 
