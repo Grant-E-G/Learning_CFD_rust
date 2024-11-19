@@ -2,9 +2,10 @@ use plotters::prelude::*;
 use clap::Parser;
 
 use std::process::{Command, Stdio};
+use std::f64::consts::PI;
 use std::io::{ BufRead, BufReader};
 use indicatif::{ProgressBar, ProgressStyle};
-
+use cas_bin::{Context, Symbol, Expression};
 
 #[derive(Parser)]
 struct Opts {
@@ -42,6 +43,20 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn std::e
     ))?;
     Ok(())
 }
+fn initalization_fn(u_lenght: usize) -> Vec<f64> {
+    let mut u_state = vec![1.0; u_lenght];
+    // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
+    let mut context = Context::new();
+    let x = Symbol::new("x");
+    let t = Symbol::new("t");
+    let nu = Symbol::new("nu");
+
+    let expr1 = (-(x*x -4.0*t)/(4.0*nu*(t+1))).exp() + ((-(x - 4.0*t -2.0*PI).powi(2.0))/(4.0*nu*(t+1))).exp();
+    print!("{:?} \n", expr1);
+    let u_expr = -(2.0*nu/expr1)*expr1.diff(x) + 4.0; 
+    print!("{:?} \n", u_expr);
+    
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
@@ -52,6 +67,24 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
     let mut u_wave_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
+
+    let mut context = Context::new();
+    let x = Symbol::new("x");
+    let t = Symbol::new("t");
+    let nu = Symbol::new("nu");
+
+    let expr1 = (-(x*x -4.0*t)/(4.0*nu*(t+1))).exp() + ((-(x - 4.0*t -2.0*PI).powi(2.0))/(4.0*nu*(t+1))).exp();
+    print!("{:?} \n", expr1);
+    let u_expr = -(2.0*nu/expr1)*expr1.diff(x) + 4.0; 
+    print!("{:?} \n", u_expr);
+
+    //we use context.set(name, value) to set the value of a symbol
+
+
+
+    /* silence this code block while we are working on the initalization function 
+
+
     let lower_bound = (0.5 / x_delta) as usize;
     let upper_bound = (1.0 / x_delta) as usize;
     u_wave_state[lower_bound..upper_bound].fill(2.0);
@@ -135,7 +168,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     
 
-
+     */
     Ok(())
 
 
