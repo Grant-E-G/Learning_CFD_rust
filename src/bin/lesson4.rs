@@ -24,13 +24,13 @@ struct Opts {
 
 }
 
-fn plot_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn std::error::Error>> {
+fn plot_frame(data: &Vec<f64>, frame_number: usize, title_str: &str) -> Result<(), Box<dyn std::error::Error>> {
     let file_name = format!("frame_{:04}.png", frame_number);
     let root = BitMapBackend::new(&file_name, (800, 600)).into_drawing_area();
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption("Burgers' Equation", ("sans-serif", 50))
+        .caption(title_str, ("sans-serif", 50))
         .margin(10)
         .x_label_area_size(30)
         .y_label_area_size(30)
@@ -43,7 +43,7 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize) -> Result<(), Box<dyn std::e
     ))?;
     Ok(())
 }
-fn initalization_fn(u_lenght: usize) -> Vec<f64> {
+fn initalization_fn(u_lenght: usize, nu_val: f64, total_x_delta: f64) -> Vec<f64> {
     let mut u_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
     let mut context = Context::new();
@@ -55,6 +55,14 @@ fn initalization_fn(u_lenght: usize) -> Vec<f64> {
     print!("{:?} \n", expr1);
     let u_expr = -(2.0*nu/expr1)*expr1.diff(x) + 4.0; 
     print!("{:?} \n", u_expr);
+    //evalueate the expression at t=0
+    for x in 0..u_lenght {
+        context.set(x, x as f64 * total_x_delta);
+        context.set(nu, nu_val);
+        context.set(t, 0.0);
+        u_state[x] = u_expr.evaluate(&context);
+    }
+    u_state
     
 }
 
@@ -65,20 +73,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let t_delta = opts.sigma * (x_delta*x_delta)/opts.viscosity;
     let grid_point_number_t = (opts.total_t_delta / t_delta).floor() as u64;
     print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
-    let mut u_wave_state = vec![1.0; u_lenght];
-    // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
-
-    let mut context = Context::new();
-    let x = Symbol::new("x");
-    let t = Symbol::new("t");
-    let nu = Symbol::new("nu");
-
-    let expr1 = (-(x*x -4.0*t)/(4.0*nu*(t+1))).exp() + ((-(x - 4.0*t -2.0*PI).powi(2.0))/(4.0*nu*(t+1))).exp();
-    print!("{:?} \n", expr1);
-    let u_expr = -(2.0*nu/expr1)*expr1.diff(x) + 4.0; 
-    print!("{:?} \n", u_expr);
-
-    //we use context.set(name, value) to set the value of a symbol
+    // initalize the state
+    let u_inital_state = initalization_fn(u_lenght, opts.viscosity, opts.total_x_delta);
+    plot_frame(&u_inital_state, 0 as usize, "Burgers' Equation")?;
 
 
 
