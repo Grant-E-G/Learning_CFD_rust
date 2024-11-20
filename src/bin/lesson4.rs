@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 use std::f64::consts::PI;
 use std::io::{ BufRead, BufReader};
 use indicatif::{ProgressBar, ProgressStyle};
-use cas_bin::{Context, Symbol, Expression};
+use symengine::{symbol, Basic};
 
 #[derive(Parser)]
 struct Opts {
@@ -46,21 +46,26 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize, title_str: &str) -> Result<(
 fn initalization_fn(u_lenght: usize, nu_val: f64, total_x_delta: f64) -> Vec<f64> {
     let mut u_state = vec![1.0; u_lenght];
     // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
-    let mut context = Context::new();
-    let x = Symbol::new("x");
-    let t = Symbol::new("t");
-    let nu = Symbol::new("nu");
 
-    let expr1 = (-(x*x -4.0*t)/(4.0*nu*(t+1))).exp() + ((-(x - 4.0*t -2.0*PI).powi(2.0))/(4.0*nu*(t+1))).exp();
+    let x = symbol("x");
+    let t = symbol("t");
+    let nu = symbol("nu");
+
+    let expr1 = (-(x.clone()*x.clone() -4.0*t.clone())
+                /(4.0*nu.clone()*(t.clone()+1))).exp() 
+                + ((-(x.clone() - 4.0*t.clone() -2.0*PI).powi(2.0))
+                /(4.0*nu.clone()*(t.clone()+1))).exp();
     print!("{:?} \n", expr1);
-    let u_expr = -(2.0*nu/expr1)*expr1.diff(x) + 4.0; 
+    let u_expr = -(2.0*nu.clone()/expr1.clone())*expr1.diff(&x) + 4.0; 
     print!("{:?} \n", u_expr);
     //evalueate the expression at t=0
     for x in 0..u_lenght {
-        context.set(x, x as f64 * total_x_delta);
-        context.set(nu, nu_val);
-        context.set(t, 0.0);
-        u_state[x] = u_expr.evaluate(&context);
+        let mut subs = Basic::new_dict();
+        subs.insert(nu.clone(), nu_val.into()); 
+        subs.insert(t.clone(), 0.0.into());  // Set t = 0 (initial condition)
+        subs.insert(x.clone(), (x as f64 * total_x_delta).into());
+
+        u_state[x] = u_expr.subs(&subs).evalf().unwrap().to_f64().unwrap();
     }
     u_state
     

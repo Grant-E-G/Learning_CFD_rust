@@ -8,4 +8,4 @@ plotters = "0.3"  # Use the latest version available
 clap = { version = "4.0", features = ["derive"] }
 indicatif = "0.17"
 glob = "0.3"
-cas-bin = "0.4"
+symengine = "0.2"
