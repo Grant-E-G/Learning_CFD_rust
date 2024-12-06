@@ -8,4 +8,9 @@ plotters = "0.3"  # Use the latest version available
 clap = { version = "4.0", features = ["derive"] }
 indicatif = "0.17"
 glob = "0.3"
-symengine = "0.2.2"
+symengine = { path = "../local-symengine" }
+symengine-sys = "=0.1.0"
+bindgen = "0.66"
+clang-sys = "=1.8.0"
+[patch.crates-io]
+symengine-sys = { path = "symengine-sys" }
