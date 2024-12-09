@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 use std::f64::consts::PI;
 use std::io::{ BufRead, BufReader};
 use indicatif::{ProgressBar, ProgressStyle};
-use symengine::{symbol, Basic};
+use symengine::{Expression, ExpressionMap};
 
 #[derive(Parser)]
 struct Opts {
@@ -43,32 +43,39 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize, title_str: &str) -> Result<(
     ))?;
     Ok(())
 }
-fn initalization_fn(u_lenght: usize, nu_val: f64, total_x_delta: f64) -> Vec<f64> {
-    let mut u_state = vec![1.0; u_lenght];
-    // We are using inital conditions u is 2.0 for 0.5 <= x <= 1.0, and 1.0 otherwise
+fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f64> {
+    let mut u_state = vec![1.0; u_length];
 
-    let x = symbol("x");
-    let t = symbol("t");
-    let nu = symbol("nu");
+    // Create symbolic variables
+    let x = Expression::new("x");
+    let t = Expression::new("t");
+    let nu = Expression::new("nu");
 
-    let expr1 = (-(x.clone()*x.clone() -4.0*t.clone())
-                /(4.0*nu.clone()*(t.clone()+1))).exp() 
-                + ((-(x.clone() - 4.0*t.clone() -2.0*PI).powi(2.0))
-                /(4.0*nu.clone()*(t.clone()+1))).exp();
-    print!("{:?} \n", expr1);
-    let u_expr = -(2.0*nu.clone()/expr1.clone())*expr1.diff(&x) + 4.0; 
-    print!("{:?} \n", u_expr);
-    //evalueate the expression at t=0
-    for x in 0..u_lenght {
-        let mut subs = Basic::new_dict();
-        subs.insert(nu.clone(), nu_val.into()); 
-        subs.insert(t.clone(), 0.0.into());  // Set t = 0 (initial condition)
-        subs.insert(x.clone(), (x as f64 * total_x_delta).into());
+    // Define the symbolic expressions
+    let expr1 = Expression::from(format!(
+        "exp(-(x^2 - 4*t)/(4*nu*(t+1))) + exp(-(x - 4*t - 2*PI)^2 / (4*nu*(t+1)))"
+    ));
 
-        u_state[x] = u_expr.subs(&subs).evalf().unwrap().to_f64().unwrap();
+    println!("{:?}", expr1);
+
+    let u_expr = Expression::from(format!(
+        "-(2*nu/({expr1})) * diff({expr1}, x) + 4"
+    ));
+
+
+    println!("{:?}", u_expr);
+
+    // Evaluate the expression at t = 0
+    for i in 0..u_length {
+        let mut subs = ExpressionMap::new();
+        subs.insert("nu", Expression::from(nu_val));
+        subs.insert("t", Expression::from(0.0));
+        subs.insert("x", Expression::from(i as f64 * total_x_delta));
+
+        u_state[i] = u_expr.subs(&subs).evalf().unwrap().to_f64().unwrap();
     }
+
     u_state
-    
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -79,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let grid_point_number_t = (opts.total_t_delta / t_delta).floor() as u64;
     print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
     // initalize the state
-    let u_inital_state = initalization_fn(u_lenght, opts.viscosity, opts.total_x_delta);
+    let u_inital_state = initialization_fn(u_lenght, opts.viscosity, opts.total_x_delta);
     plot_frame(&u_inital_state, 0 as usize, "Burgers' Equation")?;
 
 
