@@ -51,19 +51,29 @@ fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f6
     let t = Expression::new("t");
     let nu = Expression::new("nu");
 
-    // Define the symbolic expressions
-    let expr1 = Expression::from(format!(
-        "exp(-(x^2 - 4*t)/(4*nu*(t+1))) + exp(-(x - 4*t - 2*PI)^2 / (4*nu*(t+1)))"
-    ));
+    // Define the symbolic expressions step-by-step
+    let denom = Expression::from(4.0) * nu.clone() * (t.clone() + Expression::from(1.0));
 
-    println!("{:?}", expr1);
+    // First exponential term: exp(-(x^2 - 4*t) / (4*nu*(t+1)))
+    let term1_numerator = Expression::from(-1.0) * (x.clone() * x.clone() - Expression::from(4.0) * t.clone());
+    let term1 = (term1_numerator / denom.clone()).exp();
 
-    let u_expr = Expression::from(format!(
-        "-(2*nu/({expr1})) * diff({expr1}, x) + 4"
-    ));
+    // Second exponential term: exp(-(x - 4*t - 2π)^2 / (4*nu*(t+1)))
+    let term2_numerator = Expression::from(-1.0)
+        * (x.clone() - Expression::from(4.0) * t.clone() - Expression::from(2.0 * std::f64::consts::PI))
+        * (x.clone() - Expression::from(4.0) * t.clone() - Expression::from(2.0 * std::f64::consts::PI));
+    let term2 = (term2_numerator / denom.clone()).exp();
 
+    // Combine the two terms: expr1 = term1 + term2
+    let expr1 = term1 + term2;
 
-    println!("{:?}", u_expr);
+    println!("expr1: {:?}", expr1);
+
+    // Define the u_expr expression: -(2*nu / expr1) * diff(expr1, x) + 4
+    let u_expr = (Expression::from(-1.0) * (Expression::from(2.0) * nu.clone() / expr1.clone()) * expr1.diff(&x))
+        + Expression::from(4.0);
+
+    println!("u_expr: {:?}", u_expr);
 
     // Evaluate the expression at t = 0
     for i in 0..u_length {
@@ -72,11 +82,13 @@ fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f6
         subs.insert("t", Expression::from(0.0));
         subs.insert("x", Expression::from(i as f64 * total_x_delta));
 
+        // Substitute values and evaluate
         u_state[i] = u_expr.subs(&subs).evalf().unwrap().to_f64().unwrap();
     }
 
     u_state
 }
+
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
