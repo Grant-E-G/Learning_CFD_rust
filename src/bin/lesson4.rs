@@ -83,7 +83,10 @@ fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f6
         subs.insert("x", Expression::from(i as f64 * total_x_delta));
 
         // Substitute values and evaluate
-        u_state[i] = u_expr.subs(&subs).evalf().unwrap().to_f64().unwrap();
+        u_state[i] = u_expr
+            .subs(&subs) // Substitute variables
+            .evalf()     // Numerically evaluate the expression
+            .to_f64()    // Convert to f64
     }
 
     u_state
