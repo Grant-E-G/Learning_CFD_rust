@@ -34,7 +34,7 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize, title_str: &str) -> Result<(
         .margin(10)
         .x_label_area_size(30)
         .y_label_area_size(30)
-        .build_cartesian_2d(0..data.len(), -3.0..3.0)?;
+        .build_cartesian_2d(0..data.len(), -10.0..10.0)?;
 
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(
@@ -43,7 +43,7 @@ fn plot_frame(data: &Vec<f64>, frame_number: usize, title_str: &str) -> Result<(
     ))?;
     Ok(())
 }
-fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f64> {
+fn initialization_fn(u_length: usize, nu_val: f64, x_delta: f64) -> Vec<f64> {
     let mut u_state = vec![1.0; u_length];
 
     // Create symbolic variables
@@ -52,10 +52,13 @@ fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f6
     let nu = Expression::new("nu");
 
     // Define the symbolic expressions step-by-step
+    // 4 * nu * (t + 1)
     let denom = Expression::from(4.0) * nu.clone() * (t.clone() + Expression::from(1.0));
 
-    // First exponential term: exp(-(x^2 - 4*t) / (4*nu*(t+1)))
-    let term1_numerator = Expression::from(-1.0) * (x.clone() * x.clone() - Expression::from(4.0) * t.clone());
+    // First exponential term: exp(-(x - 4*t)^2 / (4*nu*(t+1)))
+    let term1_numerator = Expression::from(-1.0) * 
+        (x.clone() - Expression::from(4.0) * t.clone())*
+        (x.clone() - Expression::from(4.0) * t.clone());
     let term1 = (term1_numerator / denom.clone()).exp();
 
     // Second exponential term: exp(-(x - 4*t - 2π)^2 / (4*nu*(t+1)))
@@ -67,26 +70,29 @@ fn initialization_fn(u_length: usize, nu_val: f64, total_x_delta: f64) -> Vec<f6
     // Combine the two terms: expr1 = term1 + term2
     let expr1 = term1 + term2;
 
-    println!("expr1: {:?}", expr1);
+    println!("expr1: {:?}\n", expr1);
 
     // Define the u_expr expression: -(2*nu / expr1) * diff(expr1, x) + 4
     let u_expr = (Expression::from(-1.0) * (Expression::from(2.0) * nu.clone() / expr1.clone()) * expr1.diff(&x))
         + Expression::from(4.0);
 
-    println!("u_expr: {:?}", u_expr);
+    println!("u_expr: {:?}\n", u_expr);
 
     // Evaluate the expression at t = 0
     for i in 0..u_length {
         let mut subs = ExpressionMap::new();
         subs.insert("nu", Expression::from(nu_val));
         subs.insert("t", Expression::from(0.0));
-        subs.insert("x", Expression::from(i as f64 * total_x_delta));
+        subs.insert("x", Expression::from(i as f64 * x_delta));
+
 
         // Substitute values and evaluate
         u_state[i] = u_expr
             .subs(&subs) // Substitute variables
             .evalf()     // Numerically evaluate the expression
-            .to_f64()    // Convert to f64
+            .to_f64();    // Convert to f64
+        print!("{:?} \n", u_state[i]);
+        print!("x value {:?} \n", i as f64 * x_delta);
     }
 
     u_state
@@ -101,7 +107,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let grid_point_number_t = (opts.total_t_delta / t_delta).floor() as u64;
     print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
     // initalize the state
-    let u_inital_state = initialization_fn(u_lenght, opts.viscosity, opts.total_x_delta);
+    let u_inital_state = initialization_fn(u_lenght, opts.viscosity, x_delta);
+    print!("u_inital_state {:?} \n", u_inital_state);
     plot_frame(&u_inital_state, 0 as usize, "Burgers' Equation")?;
 
 
