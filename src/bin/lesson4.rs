@@ -9,15 +9,22 @@ use symengine::{Expression, ExpressionMap};
 
 #[derive(Parser)]
 struct Opts {
-    #[clap(long, default_value_t = 100)]
+    #[clap(long, default_value_t = 101)]
     grid_point_number_x: u64,
-    #[clap(long, default_value_t = 2.0)]
+    #[clap(long, default_value_t = 2.0*PI*(101.0/100.0))]
+    // dx = 2*pi/(grid_point_number_x - 1)
+    // total_x_delta = 2*pi(101/100)
     total_x_delta: f64,
-    #[clap(long, default_value_t = 0.5)]
+    #[clap(long, default_value_t =100.0*0.07*2.0*PI/(100.0) )]
+    //total_t_delta = dt*100 = dx*du*100
     total_t_delta: f64,
-    #[clap(long, default_value_t = 0.3)]
+    #[clap(long, default_value_t = 0.07)]
     viscosity: f64,
+    #[clap(long, default_value_t = 100)]
+    //total number of time steps
+    grid_point_number_t: u64,
     #[clap(long, default_value_t = 0.2)]
+    //nu = 0.07
     sigma: f64,
     #[clap(long)]
     verbose: bool,
@@ -103,9 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts: Opts = Opts::parse();
     let u_lenght = opts.grid_point_number_x as usize; 
     let x_delta = opts.total_x_delta / opts.grid_point_number_x as f64;
-    let t_delta = opts.sigma * (x_delta*x_delta)/opts.viscosity;
-    let grid_point_number_t = (opts.total_t_delta / t_delta).floor() as u64;
-    print!("grid_point_number_t (aka number of frames) {:?} \n", grid_point_number_t);
+    let t_delta = opts.total_t_delta / opts.grid_point_number_t as f64;
     // initalize the state
     let u_inital_state = initialization_fn(u_lenght, opts.viscosity, x_delta);
     print!("u_inital_state {:?} \n", u_inital_state);
